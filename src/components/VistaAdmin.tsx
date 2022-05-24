@@ -113,7 +113,7 @@ const VistaAdmin: FC = () => {
 				{ rol: { invitado: true, admin: false, author: false } },
 				{ merge: true }
 			);
-			console.log("Usuario malandreado");
+			console.log(res.data.message);
 		});
 	};
 
