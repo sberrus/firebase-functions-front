@@ -21,6 +21,7 @@ const UsuarioProvider = ({ children }: UserProviderProps) => {
 		email: "",
 		uid: "",
 		activo: false,
+		rol: { admin: false, author: false },
 	};
 
 	// UserContext state
@@ -35,6 +36,13 @@ const UsuarioProvider = ({ children }: UserProviderProps) => {
 			if (user) {
 				// Getting the user signed in claims
 				user.getIdTokenResult().then((idTokenResult) => {
+					// Condiciones
+					const isAdmin = !!idTokenResult.claims.admin;
+					const isAuthor = !!idTokenResult.claims.author;
+					const isAdminAndAuthor =
+						!!idTokenResult.claims.admin && !!idTokenResult.claims.author;
+
+					console.log(idTokenResult.claims);
 					// Los claims son los atributos especiales que solo pueden ser modificados a travez del backend.
 					// Es aquí donde incorporaremos los permisos especiales para dar permisos de administrador o de usuario normal.
 
@@ -42,26 +50,34 @@ const UsuarioProvider = ({ children }: UserProviderProps) => {
 					// Cabe destacar que usamos la doble negación por un motivo especial. Con la doble negación comprobamos rápidamente
 					// que una condición sea booleana, por lo que en la siguiente condicional estamos preguntando que si el valor es TRUE
 					// sea TRUE y no otro valor trully.
-					if (!!idTokenResult.claims.admin) {
+					if (isAdminAndAuthor) {
 						setUsuario({
 							email: user.email,
 							uid: user.uid,
+							rol: { author: true, admin: true },
 							activo: true,
-							rol: "admin",
 						});
-					} else if (!!idTokenResult.claims.author) {
+					} else if (isAuthor) {
 						setUsuario({
 							email: user.email,
 							uid: user.uid,
 							activo: true,
-							rol: "author",
+							rol: { author: true },
+						});
+					} else if (isAdmin) {
+						// Seguro hay alguna forma más facil de hacerlo pero por los momentos lo dejaré así.
+						setUsuario({
+							email: user.email,
+							uid: user.uid,
+							activo: true,
+							rol: { admin: true },
 						});
 					} else {
 						setUsuario({
 							email: user.email,
 							uid: user.uid,
 							activo: true,
-							rol: "invitado",
+							rol: { invitado: true },
 						});
 					}
 				});
@@ -93,11 +109,12 @@ const UsuarioProvider = ({ children }: UserProviderProps) => {
 				await setDoc(userRef, {
 					uid,
 					email,
-					rol: "invitado",
+					rol: { invitado: true },
 				});
+				return;
 			}
 
-			setUsuario({ email, uid, activo: true });
+			setUsuario({ email, uid, activo: true, rol: userSnap.data().rol });
 		} catch (error) {
 			console.log(error);
 		}

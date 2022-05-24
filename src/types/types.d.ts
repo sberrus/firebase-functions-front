@@ -1,8 +1,14 @@
+export type UserRolesType = {
+	admin?: boolean;
+	author?: boolean;
+	invitado?: boolean;
+};
+
 export type UserType = {
 	uid?: string | null;
 	email?: string | null;
 	activo?: boolean | null;
-	rol?: "admin" | "author" | "invitado";
+	rol?: UserRolesType;
 };
 
 export type UserContextType = {

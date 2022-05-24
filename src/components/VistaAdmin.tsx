@@ -1,5 +1,5 @@
 // React
-import { FC, useEffect, useState } from "react";
+import { FC, useEffect, useState, useContext } from "react";
 // Firebase
 import {
 	collection,
@@ -10,17 +10,18 @@ import {
 	query,
 	setDoc,
 } from "firebase/firestore";
-
 // Firebase Functions
 import { getFunctions, httpsCallable } from "firebase/functions";
-
 // React-bootstrap
 import { Dropdown, Table } from "react-bootstrap";
-import { Unsubscribe } from "firebase/auth";
+// Context
+import { UsuarioContext } from "../contexts/UsuarioProvider";
 
 const VistaAdmin: FC = () => {
 	const [usuarios, setUsuarios] = useState<DocumentData>([]);
 	const [db] = useState(getFirestore());
+
+	const userContext = useContext(UsuarioContext);
 
 	useEffect(() => {
 		fetchUsers();
@@ -39,10 +40,7 @@ const VistaAdmin: FC = () => {
 		});
 	};
 
-	/**
-	 *
-	 */
-	const addAdminUser = (email: string) => {
+	const addAdminRol = (email: string) => {
 		// Primero obtenemos las functions
 		const functions = getFunctions();
 		// Obtenemos la función que tenemos definida en el backend para usarla en nuestros front
@@ -64,13 +62,58 @@ const VistaAdmin: FC = () => {
 		 */
 		agregarAdministrador({ email }).then(async (res: any) => {
 			if (res.data.error) {
+				console.log(res.data.error);
+				return;
+			}
+
+			const docRef = doc(db, "usuarios", email);
+			await setDoc(
+				docRef,
+				{ rol: { admin: true, invitado: false } },
+				{ merge: true }
+			);
+			console.log("Usuario creado con exito");
+		});
+	};
+
+	const addAuthorRol = (email: string) => {
+		// Primero obtenemos las functions
+		const functions = getFunctions();
+		const crearAutor = httpsCallable(functions, "crearAutor");
+
+		crearAutor({ email }).then(async (res: any) => {
+			if (res.data.error) {
+				console.log(res.data.error);
+				return;
+			}
+
+			const docRef = doc(db, "usuarios", email);
+			await setDoc(
+				docRef,
+				{ rol: { author: true, invitado: false } },
+				{ merge: true }
+			);
+			console.log("Usuario modificado con exito");
+		});
+	};
+	const addInvitadoRol = (email: string) => {
+		// Primero obtenemos las functions
+		const functions = getFunctions();
+		const eliminarRoles = httpsCallable(functions, "eliminarRoles");
+
+		eliminarRoles({ email }).then(async (res: any) => {
+			if (res.data.error) {
 				console.log("No cuentas con los permisos necesarios");
 				return;
 			}
 
 			const docRef = doc(db, "usuarios", email);
-			await setDoc(docRef, { rol: "admin" }, { merge: true });
-			console.log("Usuario creado con exito");
+			await setDoc(
+				docRef,
+				{ rol: { invitado: true, admin: false, author: false } },
+				{ merge: true }
+			);
+			console.log("Usuario malandreado");
 		});
 	};
 
@@ -91,7 +134,19 @@ const VistaAdmin: FC = () => {
 						<tr key={usuario.email}>
 							<td>{idx + 1}</td>
 							<td>{usuario.email}</td>
-							<td>{usuario.rol}</td>
+
+							<td>
+								{usuario.rol.admin && (
+									<span className="px-1">admin</span>
+								)}
+								{usuario.rol.author && (
+									<span className="px-1">author</span>
+								)}
+								{usuario.rol.invitado && (
+									<span className="px-1">invitado</span>
+								)}
+							</td>
+
 							<td>
 								<Dropdown>
 									<Dropdown.Toggle
@@ -104,9 +159,24 @@ const VistaAdmin: FC = () => {
 									<Dropdown.Menu className="w-100 text-center">
 										<Dropdown.Item
 											as="button"
-											onClick={() => addAdminUser(usuario.email)}
+											disabled={usuario.rol.admin}
+											onClick={() => addAdminRol(usuario.email)}
 										>
 											Administrador
+										</Dropdown.Item>
+										<Dropdown.Item
+											as="button"
+											disabled={usuario.rol.author}
+											onClick={() => addAuthorRol(usuario.email)}
+										>
+											Author
+										</Dropdown.Item>
+										<Dropdown.Item
+											as="button"
+											disabled={usuario.rol.invitado}
+											onClick={() => addInvitadoRol(usuario.email)}
+										>
+											Invitado
 										</Dropdown.Item>
 									</Dropdown.Menu>
 								</Dropdown>

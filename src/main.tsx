@@ -8,6 +8,8 @@ import "./firebase/config";
 import UsuarioProvider from "./contexts/UsuarioProvider";
 // React-Bootstrap Css Config
 import "bootstrap/dist/css/bootstrap.min.css";
+// Bootstrap icons
+import "bootstrap-icons/font/bootstrap-icons.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
 	<React.StrictMode>
