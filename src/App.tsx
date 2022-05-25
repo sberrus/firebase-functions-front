@@ -2,7 +2,7 @@
 import { FC, useContext } from "react";
 import { Container } from "react-bootstrap";
 import { MainMenu, VistaAdmin } from "./components";
-import AgregarLibros from "./components/AgregarLibros";
+import BooksManager from "./components/BooksManager";
 import Libros from "./components/Libros";
 import { UsuarioContext } from "./contexts/UsuarioProvider";
 
@@ -13,7 +13,7 @@ const App: FC = () => {
 			<MainMenu />
 			<Container>
 				{userContext?.usuario.rol?.admin && <VistaAdmin />}
-				{userContext?.usuario.rol?.author && <AgregarLibros />}
+				{userContext?.usuario.rol?.author && <BooksManager />}
 				<Libros />
 			</Container>
 		</>

@@ -19,3 +19,12 @@ export type UserContextType = {
 export type UserProviderProps = {
 	children: JSX.Element;
 };
+
+export type BookType =
+	| {
+			author: string;
+			paginas: number;
+			titulo: string;
+	  }
+	| DocumentData;
+export type BookManagerStateType = "dashboard" | "addBook" | "editBook";
