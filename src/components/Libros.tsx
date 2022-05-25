@@ -12,17 +12,15 @@ import {
 import { FC, useEffect, useState } from "react";
 import { Table } from "react-bootstrap";
 
-type BookType = {
-	id: string;
-	data:
-		| {
-				id: string;
-				titulo: string;
-				paginas: number;
-				author: DocumentReference;
-		  }
-		| DocumentData;
-};
+type BookType =
+	| {
+			id: string;
+
+			titulo: string;
+			paginas: number;
+			author: DocumentReference;
+	  }
+	| DocumentData;
 
 const Libros: FC = () => {
 	const [db] = useState(getFirestore());
@@ -36,8 +34,8 @@ const Libros: FC = () => {
 		const bookspayload: BookType[] = [];
 		booksSnapshot.forEach((book) => {
 			const id = book.id;
-			const data = book.data();
-			bookspayload.push({ id, data });
+			const { paginas, author, titulo } = book.data();
+			bookspayload.push({ id, paginas, author, titulo });
 		});
 
 		// send data to state
@@ -65,10 +63,10 @@ const Libros: FC = () => {
 				<tbody>
 					{books.map((book) => (
 						<tr key={book.id}>
-							<td>{book.data.titulo}</td>
-							<td>{book.data.paginas}</td>
+							<td>{book.titulo}</td>
+							<td>{book.paginas}</td>
 							<td>
-								<AuthorEmail authorId={book.data.author} />
+								<AuthorEmail authorId={book.author} />
 							</td>
 						</tr>
 					))}
@@ -89,8 +87,9 @@ const AuthorEmail = ({ authorId }: { authorId: string }) => {
 
 	const getAuthor = async () => {
 		const db = getFirestore();
-		console.log(authorId);
-		const authorRef = doc(db, "usuarios", authorId);
+
+		// todo: esta shit no quiere darme el documento
+		const authorRef = doc(db, "usuarios", authorId.trim());
 		const authorSnapshot = await getDoc(authorRef);
 
 		if (authorSnapshot.exists()) {
