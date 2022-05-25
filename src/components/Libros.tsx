@@ -55,19 +55,19 @@ const Libros: FC = () => {
 			<Table striped bordered hover size="sm">
 				<thead>
 					<tr>
-						<th>Título</th>
-						<th>Paginas</th>
-						<th>Author</th>
+						<th scope="col">Título</th>
+						<th scope="col">Author</th>
+						<th scope="col">Paginas</th>
 					</tr>
 				</thead>
 				<tbody>
 					{books.map((book) => (
 						<tr key={book.id}>
-							<td>{book.titulo}</td>
-							<td>{book.paginas}</td>
+							<th scope="row">{book.titulo}</th>
 							<td>
 								<AuthorEmail authorId={book.author} />
 							</td>
+							<td>{book.paginas}</td>
 						</tr>
 					))}
 				</tbody>
@@ -79,7 +79,7 @@ const Libros: FC = () => {
 export default Libros;
 
 const AuthorEmail = ({ authorId }: { authorId: string }) => {
-	const [data, setData] = useState();
+	const [data, setData] = useState(null);
 
 	useEffect(() => {
 		getAuthor();
@@ -93,9 +93,9 @@ const AuthorEmail = ({ authorId }: { authorId: string }) => {
 		const authorSnapshot = await getDoc(authorRef);
 
 		if (authorSnapshot.exists()) {
-			console.log(authorSnapshot.data());
+			setData(authorSnapshot.data().email);
 		} else console.log("El documento no existe");
 	};
 
-	return <span>hola</span>;
+	return <>{data ? data : "cargando..."}</>;
 };

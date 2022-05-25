@@ -34,15 +34,9 @@ const UsuarioProvider = ({ children }: UserProviderProps) => {
 		onAuthStateChanged(auth, (user) => {
 			// detect if user exists
 			if (user) {
+				let rol = {};
 				// Getting the user signed in claims
 				user.getIdTokenResult().then((idTokenResult) => {
-					// Condiciones
-					const isAdmin = !!idTokenResult.claims.admin;
-					const isAuthor = !!idTokenResult.claims.author;
-					const isAdminAndAuthor =
-						!!idTokenResult.claims.admin && !!idTokenResult.claims.author;
-
-					console.log(idTokenResult.claims);
 					// Los claims son los atributos especiales que solo pueden ser modificados a travez del backend.
 					// Es aquí donde incorporaremos los permisos especiales para dar permisos de administrador o de usuario normal.
 
@@ -50,38 +44,18 @@ const UsuarioProvider = ({ children }: UserProviderProps) => {
 					// Cabe destacar que usamos la doble negación por un motivo especial. Con la doble negación comprobamos rápidamente
 					// que una condición sea booleana, por lo que en la siguiente condicional estamos preguntando que si el valor es TRUE
 					// sea TRUE y no otro valor trully.
-					if (isAdminAndAuthor) {
-						setUsuario({
-							email: user.email,
-							uid: user.uid,
-							rol: { author: true, admin: true },
-							activo: true,
-						});
-					} else if (isAuthor) {
-						setUsuario({
-							email: user.email,
-							uid: user.uid,
-							activo: true,
-							rol: { author: true },
-						});
-					} else if (isAdmin) {
-						// Seguro hay alguna forma más facil de hacerlo pero por los momentos lo dejaré así.
-						setUsuario({
-							email: user.email,
-							uid: user.uid,
-							activo: true,
-							rol: { admin: true },
-						});
-					} else {
-						setUsuario({
-							email: user.email,
-							uid: user.uid,
-							activo: true,
-							rol: { invitado: true },
-						});
-					}
+					const isAdmin = !!idTokenResult.claims.admin;
+					const isAuthor = !!idTokenResult.claims.author;
+
+					setUsuario({
+						email: user.email,
+						uid: user.uid,
+						activo: true,
+						rol: { admin: isAdmin, author: isAuthor },
+					});
 				});
 			} else {
+				console.log("hello");
 				setUsuario(dataUsuarioInicial);
 			}
 		});
@@ -100,8 +74,7 @@ const UsuarioProvider = ({ children }: UserProviderProps) => {
 			const { email, uid } = user;
 
 			//todo: Pemdiente de arreglar los types
-			const userRef = doc(db, "usuarios", email);
-			// ///////////////////////////////////////
+			const userRef = doc(db, "usuarios", `${email}`);
 
 			const userSnap = await getDoc(userRef);
 			if (!userSnap.exists()) {
@@ -113,7 +86,7 @@ const UsuarioProvider = ({ children }: UserProviderProps) => {
 				});
 				return;
 			}
-
+			console.log("Usuario logeado");
 			setUsuario({ email, uid, activo: true, rol: userSnap.data().rol });
 		} catch (error) {
 			console.log(error);

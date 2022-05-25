@@ -1,7 +1,6 @@
 export type UserRolesType = {
 	admin?: boolean;
 	author?: boolean;
-	invitado?: boolean;
 };
 
 export type UserType = {
