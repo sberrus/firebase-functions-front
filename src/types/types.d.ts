@@ -28,3 +28,7 @@ export type BookType =
 	  }
 	| DocumentData;
 export type BookManagerStateType = "dashboard" | "addBook" | "editBook";
+
+export interface BookDashboardProps {
+	booksCollection: BookType[];
+}
