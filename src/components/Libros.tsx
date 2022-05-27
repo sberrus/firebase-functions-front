@@ -7,7 +7,9 @@ import {
 	getDocs,
 	getFirestore,
 	limit,
+	onSnapshot,
 	query,
+	where,
 } from "firebase/firestore";
 import { FC, useEffect, useState } from "react";
 import { Table } from "react-bootstrap";
@@ -27,19 +29,18 @@ const Libros: FC = () => {
 	const [books, setBooks] = useState<BookType[]>([]);
 
 	const getBooksPaginated = async () => {
-		const booksQuery = query(collection(db, "libros"), limit(10));
-		const booksSnapshot = await getDocs(booksQuery);
-
-		// Manage the data
-		const bookspayload: BookType[] = [];
-		booksSnapshot.forEach((book) => {
-			const id = book.id;
-			const { paginas, author, titulo } = book.data();
-			bookspayload.push({ id, paginas, author, titulo });
+		const allBooksCollection = query(
+			collection(db, "libros"),
+			where("state", "==", true),
+			limit(10)
+		);
+		onSnapshot(allBooksCollection, (booksSnapshot) => {
+			const userBooks: BookType[] = [];
+			booksSnapshot.forEach((book) => {
+				userBooks.push({ id: book.id, ...book.data() });
+			});
+			setBooks(userBooks);
 		});
-
-		// send data to state
-		setBooks(bookspayload);
 	};
 
 	useEffect(() => {
