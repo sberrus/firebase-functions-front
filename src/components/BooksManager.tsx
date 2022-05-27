@@ -1,14 +1,16 @@
 import {
+	addDoc,
 	collection,
 	getFirestore,
 	onSnapshot,
 	query,
 	where,
 } from "firebase/firestore";
-import { FC, useContext, useEffect, useState } from "react";
-import { Button, Form, Row } from "react-bootstrap";
+import { FC, FormEvent, useContext, useEffect, useState } from "react";
+import { Button, Col, Form, Row } from "react-bootstrap";
 import { UsuarioContext } from "../contexts/UsuarioProvider";
 import {
+	AddBookProps,
 	BookDashboardProps,
 	BookManagerStateType,
 	BookType,
@@ -20,7 +22,6 @@ const BooksManager: FC = () => {
 	// States
 	const [bookManagerState, setBookManagerState] =
 		useState<BookManagerStateType>("dashboard");
-	const [editingBookId, setEditingBookId] = useState<string>("");
 	const [booksCollection, setBooksCollection] = useState<BookType[]>([]);
 
 	useEffect(() => {
@@ -34,18 +35,25 @@ const BooksManager: FC = () => {
 		const db = getFirestore();
 		const usersBooksQuery = query(
 			collection(db, "libros"),
-			where("author", "==", userContext?.usuario.email)
+			where("author", "==", userContext?.usuario.email),
+			where("state", "==", true)
 		);
 		onSnapshot(usersBooksQuery, (booksSnapshot) => {
 			const userBooks: BookType[] = [];
 			booksSnapshot.forEach((book) => {
-				userBooks.push(book.data());
+				userBooks.push({ id: book.id, ...book.data() });
 			});
 			setBooksCollection(userBooks);
 		});
 	};
 
-	//todo Vista para agregar
+	/**
+	 * Modifica el state de los estados
+	 * @param newState estado nuevo
+	 */
+	const modifyState = (newState: BookManagerStateType) => {
+		setBookManagerState(newState);
+	};
 
 	//todo Vista para editar
 
@@ -54,19 +62,32 @@ const BooksManager: FC = () => {
 	return (
 		<>
 			{bookManagerState === "dashboard" && (
-				<BooksDashboard booksCollection={booksCollection} />
+				<BooksDashboard
+					booksCollection={booksCollection}
+					modifyState={modifyState}
+				/>
 			)}
-			<AddBook />
+			{bookManagerState === "addBook" && (
+				<AddBook modifyState={modifyState} />
+			)}
 		</>
 	);
 };
 
 export default BooksManager;
 
-const BooksDashboard: FC<BookDashboardProps> = ({ booksCollection }) => {
+const BooksDashboard: FC<BookDashboardProps> = ({
+	booksCollection,
+	modifyState,
+}) => {
+	const deleteBook = (id: string) => {
+		console.log(`Libro ${id} eliminado`);
+	};
+
 	return (
 		<>
 			<h3>Books Dashboard</h3>
+
 			<hr />
 			{booksCollection.length <= 0 ? (
 				<div className="d-flex align-items-center justify-content-center flex-column">
@@ -74,10 +95,30 @@ const BooksDashboard: FC<BookDashboardProps> = ({ booksCollection }) => {
 						No tienes libros para agregar. <br />
 						¿Deseas añadir tu primer libro?
 					</p>
-					<Button variant="outline-success">Añadir libro</Button>
+					<Button
+						variant="outline-success"
+						onClick={() => {
+							modifyState("addBook");
+						}}
+					>
+						Añadir libro
+					</Button>
 				</div>
 			) : (
 				<>
+					<Row>
+						<Col xs={3}>
+							<Button
+								variant="success"
+								onClick={() => {
+									modifyState("addBook");
+								}}
+							>
+								Añadir Libro <i className="bi bi-plus-circle"></i>
+							</Button>
+						</Col>
+						<Col xs={9}></Col>
+					</Row>
 					<table className="table">
 						<thead>
 							<tr>
@@ -88,7 +129,7 @@ const BooksDashboard: FC<BookDashboardProps> = ({ booksCollection }) => {
 							</tr>
 						</thead>
 						<tbody>
-							{booksCollection.map((book, idx: number) => (
+							{booksCollection.map((book: BookType, idx: number) => (
 								<tr key={book.titulo}>
 									<th scope="row">{idx + 1}</th>
 									<td>{book.titulo}</td>
@@ -103,6 +144,9 @@ const BooksDashboard: FC<BookDashboardProps> = ({ booksCollection }) => {
 										<Button
 											variant="danger"
 											className="btn-block col-6"
+											onClick={() => {
+												deleteBook(book.id);
+											}}
 										>
 											Eliminar
 										</Button>
@@ -117,35 +161,92 @@ const BooksDashboard: FC<BookDashboardProps> = ({ booksCollection }) => {
 	);
 };
 
-const AddBook: FC = () => {
-	const [validFields, setValidFields] = useState<{
-		title: boolean;
-		pages: boolean;
-	}>();
+const AddBook: FC<AddBookProps> = ({ modifyState }) => {
+	const [titleField, setTitleField] = useState<string>("");
+	const [pagesField, setPagesField] = useState<number>(0);
 
-	// todo: añadir logica sencilla para comprobar los campos validos
-	// todo: title min-len 4
-	// todo: pages not-less than 0
+	const defaultErrors = { title: false, pages: false };
+	const [showErrors, setShowErrors] = useState(defaultErrors);
+
+	const userContext = useContext(UsuarioContext);
+
+	const handleAddBookSubmit = (e: FormEvent) => {
+		e.preventDefault();
+
+		if (titleField.length < 4 || pagesField < 50) {
+			let errors = {
+				pages: false,
+				title: false,
+			};
+			if (titleField.length < 4) {
+				errors = { ...errors, title: true };
+				console.log("El titulo es demasiado corto min-len 4");
+			}
+			if (pagesField < 50) {
+				errors = { ...errors, pages: true };
+				console.log("El título es demasiado corto min-pages 50");
+			}
+			setShowErrors(errors);
+			return;
+		}
+
+		addBookToFirestore();
+	};
+
+	const addBookToFirestore = async () => {
+		const db = getFirestore();
+		const booksRef = collection(db, "libros");
+		await addDoc(booksRef, {
+			paginas: pagesField,
+			titulo: titleField,
+			author: userContext?.usuario.email,
+			state: true,
+		});
+		setShowErrors(defaultErrors);
+		setPagesField(0);
+		setTitleField("");
+		modifyState("dashboard");
+		console.log("Libro " + titleField + " creado");
+	};
 
 	return (
 		<>
 			<h3>Agregar Nuevo Libro</h3>
 			<hr />
 			<>
-				<h5>Titulo</h5>
-				<Form.Control
-					type="text"
-					placeholder="Título"
-					isValid={validFields?.title}
-				/>
-				<br />
-				<h5>Páginas</h5>
-				<Form.Control
-					type="number"
-					placeholder="Normal text"
-					isValid={validFields?.pages}
-				/>
-				<br />
+				<Form
+					onSubmit={(e) => {
+						handleAddBookSubmit(e);
+					}}
+				>
+					<h5>Titulo</h5>
+					<Form.Control
+						type="text"
+						placeholder="Título"
+						value={titleField}
+						isInvalid={showErrors.title}
+						onChange={(e) => {
+							setShowErrors({ ...showErrors, title: false });
+							setTitleField(e.currentTarget.value);
+						}}
+					/>
+					<br />
+					<h5>Páginas</h5>
+					<Form.Control
+						type="number"
+						placeholder="Normal text"
+						value={pagesField}
+						isInvalid={showErrors.pages}
+						onChange={(e) => {
+							setShowErrors({ ...showErrors, pages: false });
+							setPagesField(Number(e.currentTarget.value));
+						}}
+					/>
+					<Button variant="success" type="submit">
+						Agregar Libro
+					</Button>
+					<Button variant="danger">Cancelar</Button>
+				</Form>
 			</>
 		</>
 	);

@@ -22,13 +22,19 @@ export type UserProviderProps = {
 
 export type BookType =
 	| {
+			id: string;
 			author: string;
 			paginas: number;
 			titulo: string;
 	  }
 	| DocumentData;
+
 export type BookManagerStateType = "dashboard" | "addBook" | "editBook";
 
 export interface BookDashboardProps {
 	booksCollection: BookType[];
+	modifyState(newState: BookManagerStateType): void;
+}
+export interface AddBookProps {
+	modifyState(newState: BookManagerStateType): void;
 }
