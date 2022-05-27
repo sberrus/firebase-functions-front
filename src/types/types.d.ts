@@ -38,3 +38,7 @@ export interface BookDashboardProps {
 export interface AddBookProps {
 	modifyState(newState: BookManagerStateType): void;
 }
+
+export interface BookEditorProps {
+	book: BookType;
+}

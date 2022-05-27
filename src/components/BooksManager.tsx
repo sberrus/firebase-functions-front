@@ -14,6 +14,7 @@ import { UsuarioContext } from "../contexts/UsuarioProvider";
 import {
 	AddBookProps,
 	BookDashboardProps,
+	BookEditorProps,
 	BookManagerStateType,
 	BookType,
 } from "../types/types";
@@ -82,14 +83,6 @@ const BooksDashboard: FC<BookDashboardProps> = ({
 	booksCollection,
 	modifyState,
 }) => {
-	const deleteBook = async (id: string) => {
-		const db = getFirestore();
-		const bookRef = doc(db, "libros", id);
-		await setDoc(bookRef, { state: false }, { merge: true });
-
-		console.log(`Libro ${id} eliminado`);
-	};
-
 	return (
 		<>
 			<h3>Books Dashboard</h3>
@@ -135,29 +128,8 @@ const BooksDashboard: FC<BookDashboardProps> = ({
 							</tr>
 						</thead>
 						<tbody>
-							{booksCollection.map((book: BookType, idx: number) => (
-								<tr key={book.titulo}>
-									<th scope="row">{idx + 1}</th>
-									<td>{book.titulo}</td>
-									<td>{book.author}</td>
-									<Row as="td">
-										<Button
-											variant="warning"
-											className="btn-block col-6"
-										>
-											Editar
-										</Button>
-										<Button
-											variant="danger"
-											className="btn-block col-6"
-											onClick={() => {
-												deleteBook(book.id);
-											}}
-										>
-											Eliminar
-										</Button>
-									</Row>
-								</tr>
+							{booksCollection.map((book: BookType) => (
+								<BookEditor book={book} key={book.titulo} />
 							))}
 						</tbody>
 					</table>
@@ -258,11 +230,123 @@ const AddBook: FC<AddBookProps> = ({ modifyState }) => {
 	);
 };
 
-const EditBook: FC = () => {
-	return (
+const BookEditor: FC<BookEditorProps> = ({ book }) => {
+	const [isEditing, setIsEditing] = useState<boolean>(false);
+	const [titleField, setTitleField] = useState<string>("");
+	const [pagesField, setPagesField] = useState<number>(0);
+
+	const deleteBook = async (id: string) => {
+		const confirmation = confirm(
+			"¿Seguro que deseas eliminar el libro [" + book.titulo + "]?"
+		);
+		if (confirmation) {
+			const db = getFirestore();
+			const bookRef = doc(db, "libros", id);
+			await setDoc(bookRef, { state: false }, { merge: true });
+		}
+	};
+
+	const updateBookFirestore = async () => {
+		if (book.paginas === pagesField && book.titulo === titleField) {
+			console.log("Los campos son identicos al registro de la BBDD");
+			return;
+		}
+		if (pagesField < 50) {
+			console.log("El tamaño del libro debe ser minimo de 50 páginas");
+			return;
+		}
+
+		const db = getFirestore();
+		const bookRef = doc(db, "libros", book.id);
+		await setDoc(
+			bookRef,
+			{ paginas: pagesField, titulo: titleField },
+			{ merge: true }
+		);
+		console.log("Libro modificado");
+		toggleState();
+	};
+
+	const toggleState = () => {
+		setIsEditing(!isEditing);
+	};
+
+	const clearFields = () => {
+		setTitleField("");
+		setPagesField(0);
+	};
+
+	return isEditing ? (
 		<>
-			<h3>Editar Libro {"idLibro"}</h3>
-			<hr />
+			<tr key={book.titulo}>
+				<th scope="row">
+					{" "}
+					<input
+						type="text"
+						value={titleField}
+						onChange={(e) => {
+							setTitleField(e.currentTarget.value);
+						}}
+					/>
+				</th>
+				<td>{book.author}</td>
+				<td>
+					<input
+						type="number"
+						value={pagesField}
+						onChange={(e) => {
+							setPagesField(Number(e.currentTarget.value));
+						}}
+					/>
+				</td>
+				<Row as="td">
+					<Button
+						variant="warning"
+						className="btn-block col-6"
+						onClick={() => {
+							updateBookFirestore();
+						}}
+					>
+						Editar Libro
+					</Button>
+					<Button
+						variant="danger"
+						className="btn-block col-6"
+						onClick={() => {
+							clearFields();
+							toggleState();
+						}}
+					>
+						Cancelar
+					</Button>
+				</Row>
+			</tr>
 		</>
+	) : (
+		<tr key={book.titulo}>
+			<th scope="row"> {book.titulo}</th>
+			<td>{book.author}</td>
+			<td>{book.paginas}</td>
+			<Row as="td">
+				<Button
+					variant="warning"
+					className="btn-block col-6"
+					onClick={() => {
+						toggleState();
+					}}
+				>
+					Editar
+				</Button>
+				<Button
+					variant="danger"
+					className="btn-block col-6"
+					onClick={() => {
+						deleteBook(book.id);
+					}}
+				>
+					Eliminar
+				</Button>
+			</Row>
+		</tr>
 	);
 };

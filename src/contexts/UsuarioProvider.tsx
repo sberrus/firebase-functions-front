@@ -55,7 +55,6 @@ const UsuarioProvider = ({ children }: UserProviderProps) => {
 					});
 				});
 			} else {
-				console.log("hello");
 				setUsuario(dataUsuarioInicial);
 			}
 		});
