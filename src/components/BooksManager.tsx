@@ -1,9 +1,11 @@
 import {
 	addDoc,
 	collection,
+	doc,
 	getFirestore,
 	onSnapshot,
 	query,
+	setDoc,
 	where,
 } from "firebase/firestore";
 import { FC, FormEvent, useContext, useEffect, useState } from "react";
@@ -80,7 +82,11 @@ const BooksDashboard: FC<BookDashboardProps> = ({
 	booksCollection,
 	modifyState,
 }) => {
-	const deleteBook = (id: string) => {
+	const deleteBook = async (id: string) => {
+		const db = getFirestore();
+		const bookRef = doc(db, "libros", id);
+		await setDoc(bookRef, { state: false }, { merge: true });
+
 		console.log(`Libro ${id} eliminado`);
 	};
 
