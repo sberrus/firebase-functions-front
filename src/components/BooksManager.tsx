@@ -232,8 +232,8 @@ const AddBook: FC<AddBookProps> = ({ modifyState }) => {
 
 const BookEditor: FC<BookEditorProps> = ({ book }) => {
 	const [isEditing, setIsEditing] = useState<boolean>(false);
-	const [titleField, setTitleField] = useState<string>("");
-	const [pagesField, setPagesField] = useState<number>(0);
+	const [titleField, setTitleField] = useState<string>(book.titulo);
+	const [pagesField, setPagesField] = useState<number>(book.paginas);
 
 	const deleteBook = async (id: string) => {
 		const confirmation = confirm(
